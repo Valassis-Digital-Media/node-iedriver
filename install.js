@@ -14,10 +14,8 @@ var extract = require('extract-zip')
 var libPath = path.join(__dirname, 'lib', 'iedriver')
 var libPath64 = path.join(__dirname, 'lib', 'iedriver64')
 
-var baseUrl = process.env.IEDRIVER_CDNURL || process.env.npm_config_iedriver_cdnurl
-  || 'https://github.com/SeleniumHQ/selenium/releases/download'
-var downloadUrl = baseUrl + '/selenium-%s/IEDriverServer_Win32_%s.zip'
-var downloadUrl64 = baseUrl + '/selenium-%s/IEDriverServer_x64_%s.zip'
+var downloadUrl = 'https://github.com/SeleniumHQ/selenium/releases/download/selenium-4.14.0/IEDriverServer_Win32_4.14.0.zip'
+var downloadUrl64 = 'https://github.com/SeleniumHQ/selenium/releases/download/selenium-4.14.0/IEDriverServer_x64_4.14.0.zip'
 
 downloadUrl = util.format(downloadUrl, helper.version, helper.binaryversion);
 downloadUrl64 = util.format(downloadUrl64, helper.version, helper.binaryversion);
