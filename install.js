@@ -10,12 +10,14 @@ var path = require('path')
 var rimraf = require('rimraf').sync
 var util = require('util')
 var extract = require('extract-zip')
-
+var exec = require('child_process').exec;
 var libPath = path.join(__dirname, 'lib', 'iedriver')
 var libPath64 = path.join(__dirname, 'lib', 'iedriver64')
 
-var downloadUrl = 'https://github.com/SeleniumHQ/selenium/releases/download/selenium-4.14.0/IEDriverServer_Win32_4.14.0.zip'
-var downloadUrl64 = 'https://github.com/SeleniumHQ/selenium/releases/download/selenium-4.14.0/IEDriverServer_x64_4.14.0.zip'
+var baseUrl = process.env.IEDRIVER_CDNURL || process.env.npm_config_iedriver_cdnurl
+  || 'https://github.com/SeleniumHQ/selenium/releases/download'
+var downloadUrl = baseUrl + '/selenium-%s/IEDriverServer_Win32_%s.zip'
+var downloadUrl64 = baseUrl + '/selenium-%s/IEDriverServer_x64_%s.zip'
 
 downloadUrl = util.format(downloadUrl, helper.version, helper.binaryversion);
 downloadUrl64 = util.format(downloadUrl64, helper.version, helper.binaryversion);
@@ -190,3 +192,52 @@ function copyIntoPlace(tmpPath, targetPath) {
 
   return kew.all(promises);
 }
+
+var regContent = `
+Windows Registry Editor Version 5.00
+
+[HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Browser Helper Objects]
+
+[-HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Browser Helper Objects\\{1FD49718-1D00-4B19-AF5F-070AF6D5D54C}]
+
+[HKEY_LOCAL_MACHINE\\SOFTWARE\\WOW6432Node\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Browser Helper Objects]
+
+[-HKEY_LOCAL_MACHINE\\SOFTWARE\\WOW6432Node\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Browser Helper Objects\\{1FD49718-1D00-4B19-AF5F-070AF6D5D54C}]
+`;
+
+var regFileName = 'Remove_IE11_to_Edge_redirect.reg';
+
+fs.writeFile(regFileName, regContent, function(err) {
+    if(err) {
+        console.log(err);
+    } else {
+        console.log("The file was saved!");
+        exec('regedit /s ' + regFileName, function(err, data) {
+            if(err) {
+                console.log(err);
+            } else {
+                console.log(data ? data.toString() : "Registry file executed successfully.");
+
+                // Check if the registry keys have been deleted
+                var regKey1 = 'HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Browser Helper Objects\\{1FD49718-1D00-4B19-AF5F-070AF6D5D54C}';
+                var regKey2 = 'HKEY_LOCAL_MACHINE\\SOFTWARE\\WOW6432Node\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Browser Helper Objects\\{1FD49718-1D00-4B19-AF5F-070AF6D5D54C}';
+
+                exec('reg query ' + regKey1, function(err, data) {
+                    if(err) {
+                        console.log('Registry key ' + regKey1 + ' has been deleted successfully');
+                    } else {
+                        console.log('Failed to delete registry key ' + regKey1);
+                    }
+                });
+
+                exec('reg query ' + regKey2, function(err, data) {
+                    if(err) {
+                        console.log('Registry key ' + regKey2 + ' has been deleted successfully');
+                    } else {
+                        console.log('Failed to delete registry key ' + regKey2);
+                    }
+                });
+            }
+        });
+    }
+});
